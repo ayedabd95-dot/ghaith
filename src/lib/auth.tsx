@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, phoneToEmail, type Profile, type Role } from './supabase';
+import { setQueueOwner, clearQueue } from './offline';
 
 interface AuthState {
   session: Session | null;
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     setProfile(data as Profile); profileRef.current = data as Profile;
+    setQueueOwner(data.id);
   }, []);
 
   useEffect(() => {
@@ -64,6 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const stayActive = useCallback(() => { localStorage.setItem(LAST_KEY, String(Date.now())); setIdleWarning(false); }, []);
 
   const signOut = useCallback(async () => {
+    clearQueue();
+    setQueueOwner(null);
     await supabase.auth.signOut();
     localStorage.removeItem(LAST_KEY);
     setSession(null); setProfile(null); profileRef.current = null;

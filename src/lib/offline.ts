@@ -2,19 +2,32 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { supabase } from './supabase';
 
 /** Family reports saved on the device while there is no connection, sent when it comes back. */
-const KEY = 'alrahma-offline-families';
+const PREFIX = 'alrahma-offline-families:';
+let owner = '';
+const key = () => PREFIX + owner;
 type Draft = Record<string, unknown> & { _local_id: string; _saved_at: string };
 
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
-let cache: Draft[] = read();
+let cache: Draft[] = [];
+
+/** Each user has their own queue on the device; another account never sees or sends it. */
+export function setQueueOwner(uid: string | null) {
+  owner = uid ?? '';
+  cache = owner ? read() : [];
+  emit();
+}
+export function clearQueue() {
+  try { if (owner) localStorage.removeItem(key()); } catch { /* blocked */ }
+  cache = []; emit();
+}
 
 function read(): Draft[] {
-  try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(key()) || '[]'); } catch { return []; }
 }
 function write(list: Draft[]) {
   cache = list;
-  try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* storage full or blocked */ }
+  try { if (owner) localStorage.setItem(key(), JSON.stringify(list)); } catch { /* storage full or blocked */ }
   emit();
 }
 
@@ -28,7 +41,7 @@ export function useOfflineQueue() {
 
 let syncing = false;
 export async function syncQueue(): Promise<number> {
-  if (syncing || !navigator.onLine || !cache.length) return 0;
+  if (syncing || !owner || !navigator.onLine || !cache.length) return 0;
   syncing = true;
   let sent = 0;
   try {

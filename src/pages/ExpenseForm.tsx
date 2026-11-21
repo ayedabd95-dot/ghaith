@@ -6,6 +6,8 @@ import { useAuth } from '../lib/auth';
 import { EXPENSE_KIND, PURPOSE, money } from '../lib/format';
 import { useLoad, Field, useToast } from '../components/ui';
 
+const ALLOWED: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'application/pdf': 'pdf' };
+
 export default function ExpenseForm() {
   const nav = useNavigate();
   const toast = useToast();
@@ -45,9 +47,9 @@ export default function ExpenseForm() {
     try {
       let invoice_path: string | null = null;
       if (file) {
-        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const ext = ALLOWED[file.type];
         invoice_path = `${new Date().getFullYear()}/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('ch-invoices').upload(invoice_path, file, { contentType: file.type });
+        const { error: upErr } = await supabase.storage.from('ch-invoices').upload(invoice_path, file, { contentType: file.type, upsert: false });
         if (upErr) throw upErr;
       }
       const { data: row, error } = await supabase.from('ch_expenses').insert({
@@ -105,7 +107,7 @@ export default function ExpenseForm() {
           ) : (
             <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-ink-300 py-6 cursor-pointer hover:bg-ink-50">
               <Camera className="size-8 text-ink-500" /><span className="font-semibold">صوّر الفاتورة أو اختار ملف</span>
-              <input type="file" accept="image/*,application/pdf" capture="environment" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f && f.size > 8_000_000) { setErrs((x) => ({ ...x, file: 'الملف أكبر من 8 ميغا' })); return; } setFile(f ?? null); setErrs((x) => ({ ...x, file: '' })); }} />
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/heic,application/pdf" capture="environment" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f && !ALLOWED[f.type]) { setErrs((x) => ({ ...x, file: 'ارفع صورة (JPG أو PNG) أو ملف PDF فقط' })); return; } if (f && f.size > 8_000_000) { setErrs((x) => ({ ...x, file: 'الملف أكبر من 8 ميغا' })); return; } setFile(f ?? null); setErrs((x) => ({ ...x, file: '' })); }} />
             </label>
           )}
           {errs.file && <p className="text-sm text-red-600 mt-1">{errs.file}</p>}

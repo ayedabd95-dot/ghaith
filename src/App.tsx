@@ -35,6 +35,7 @@ function Guard({ roles, children }: { roles?: Role[]; children: ReactNode }) {
 }
 
 const OFFICE: Role[] = ['admin', 'accountant', 'auditor'];
+const STAFF: Role[] = ['admin', 'accountant', 'auditor', 'warehouse', 'researcher'];
 
 export default function App() {
   return (
@@ -56,9 +57,9 @@ export default function App() {
                 <Route path="finance/receipt/:id" element={<Guard roles={OFFICE}><Receipt /></Guard>} />
                 <Route path="approvals" element={<Guard roles={['admin']}><Approvals /></Guard>} />
                 <Route path="inventory" element={<Guard roles={[...OFFICE, 'warehouse']}><Inventory /></Guard>} />
-                <Route path="campaigns" element={<Campaigns />} />
+                <Route path="campaigns" element={<Guard roles={STAFF}><Campaigns /></Guard>} />
                 <Route path="campaigns/new" element={<Guard roles={['admin']}><CampaignForm /></Guard>} />
-                <Route path="campaigns/:id" element={<CampaignView />} />
+                <Route path="campaigns/:id" element={<Guard roles={STAFF}><CampaignView /></Guard>} />
                 <Route path="route" element={<Guard roles={['distributor', 'admin']}><RoutePage /></Guard>} />
                 <Route path="map" element={<FamiliesMap />} />
                 <Route path="team" element={<Guard roles={['admin', 'auditor']}><Team /></Guard>} />

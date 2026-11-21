@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FilePlus2, ChevronRight, Send, MapPin, Crosshair, Tag, Users, Check, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { supabase, errText, type Family } from '../lib/supabase';
-import { useAuth } from '../lib/auth';
 import { CATEGORIES, GOVERNORATES, BREADWINNER, HOUSING, TIER, num } from '../lib/format';
 import { queueFamily, isNetworkError } from '../lib/offline';
 import { Field, useToast, Modal, ListSkeleton } from '../components/ui';
@@ -39,7 +38,6 @@ export default function FamilyForm() {
   const editing = !!id;
   const nav = useNavigate();
   const toast = useToast();
-  const { profile } = useAuth();
   const [f, setF] = useState<F>(blank);
   const [step, setStep] = useState(0);
   const [errs, setErrs] = useState<Record<string, string>>({});
@@ -99,7 +97,7 @@ export default function FamilyForm() {
 
   const payload = (full: boolean) => {
     const row: Record<string, unknown> = { ...f, phone: f.phone.replace(/\s/g, ''), national_id: f.national_id || null };
-    if (full) { row.status = 'active'; row.assessed_at = new Date().toISOString(); row.assessed_by = profile!.id; }
+    if (full) { row.status = 'active'; row.assessed_at = new Date().toISOString(); }
     else if (!editing) row.status = 'pending_visit';
     return row;
   };
