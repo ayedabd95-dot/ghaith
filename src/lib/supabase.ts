@@ -11,7 +11,7 @@ export type Role = 'owner' | 'admin' | 'accountant' | 'researcher' | 'warehouse'
 export interface Profile { id: string; full_name: string; phone: string; role: Role; active: boolean; org_id: string | null; created_at: string }
 export interface Org {
   id: string; name: string; tagline: string | null; governorate: string | null; contact_phone: string | null;
-  status: 'active' | 'suspended'; plan: 'trial' | 'basic' | 'pro'; subscription_ends: string | null; approval_threshold: number; created_at: string;
+  status: 'active' | 'suspended'; plan: 'trial' | 'basic' | 'pro'; subscription_ends: string | null; approval_threshold: number; logo_path: string | null; created_at: string;
 }
 
 export interface Family {

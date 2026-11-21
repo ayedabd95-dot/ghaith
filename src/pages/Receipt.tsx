@@ -4,6 +4,7 @@ import { supabase, type Donation } from '../lib/supabase';
 import { money, METHOD, PURPOSE, dateAr, num } from '../lib/format';
 import { useLoad, ListSkeleton, ErrorBox } from '../components/ui';
 import { useAuth } from '../lib/auth';
+import { logoUrl } from '../lib/logo';
 
 export default function Receipt() {
   const { id } = useParams();
@@ -29,7 +30,7 @@ export default function Receipt() {
       </div>
       <div className="card p-6 print-full">
         <div className="flex items-center justify-between border-b border-ink-200 pb-4">
-          <div className="flex items-center gap-3"><img src={`${import.meta.env.BASE_URL}logo.svg`} width={48} height={48} alt="" className="rounded-xl" />
+          <div className="flex items-center gap-3"><img src={logoUrl(org?.logo_path)} width={48} height={48} alt="" className="rounded-xl object-contain" />
             <div><div className="font-bold">{org?.name}</div><div className="text-xs text-ink-500">{org?.tagline}</div></div></div>
           <div className="text-end"><div className="text-xs text-ink-500">رقم الوصل</div><div className="text-2xl font-bold num">#{d.receipt_no}</div></div>
         </div>

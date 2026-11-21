@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Building2, Plus, PauseCircle, PlayCircle, CalendarPlus, Users, Home, Wallet, Copy, MessageCircle } from 'lucide-react';
+import { Building2, Plus, PauseCircle, PlayCircle, CalendarPlus, Users, Home, Wallet, Copy, MessageCircle, SlidersHorizontal } from 'lucide-react';
+import OrgDetails, { callAdmin } from '../components/OrgDetails';
+import { logoUrl } from '../lib/logo';
 import { supabase } from '../lib/supabase';
 import { money, num, PLAN, dateAr, timeAgo, GOVERNORATES } from '../lib/format';
 import { useLoad, PageHeader, ListSkeleton, ErrorBox, Empty, Modal, Field, useToast, Confirm, StatTile } from '../components/ui';
 
 interface OrgRow {
   id: string; name: string; tagline: string | null; governorate: string | null; contact_phone: string | null;
-  status: 'active' | 'suspended'; plan: string; subscription_ends: string | null; created_at: string;
+  status: 'active' | 'suspended'; plan: string; subscription_ends: string | null; created_at: string; logo_path: string | null;
   members: number; families: number; donations_iqd: number; last_activity: string | null;
 }
 
@@ -14,15 +16,7 @@ const genPw = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz
 const today = () => new Date().toISOString().slice(0, 10);
 const daysLeft = (d: string | null) => (d ? Math.ceil((new Date(d).getTime() - new Date(today()).getTime()) / 86_400_000) : null);
 
-async function call(body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('ch-admin-users', { body });
-  if (error) {
-    let msg = 'صار خطأ، حاول مرة ثانية';
-    try { const j = await (error as { context?: Response }).context?.json(); if (j?.error) msg = j.error; } catch { /* ignore */ }
-    throw new Error(msg);
-  }
-  return data;
-}
+const call = callAdmin;
 
 export default function Platform() {
   const toast = useToast();
@@ -33,6 +27,7 @@ export default function Platform() {
   const [created, setCreated] = useState<{ org: string; name: string; phone: string; password: string } | null>(null);
   const [extend, setExtend] = useState<OrgRow | null>(null);
   const [toggle, setToggle] = useState<OrgRow | null>(null);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   const { data, loading, error, reload } = useLoad(async () => {
     const { data, error } = await supabase.rpc('ch_platform_overview');
@@ -55,9 +50,6 @@ export default function Platform() {
     setBusy(true);
     try { await call({ action: 'set_org', org_id: o.id, subscription_ends: base.toISOString().slice(0, 10), status: 'active' }); toast({ kind: 'ok', text: `تجدد اشتراك ${o.name} لحد ${dateAr(base)}` }); setExtend(null); reload(); }
     catch (e) { toast({ kind: 'err', text: (e as Error).message }); } finally { setBusy(false); }
-  };
-  const setPlan = async (o: OrgRow, plan: string) => {
-    try { await call({ action: 'set_org', org_id: o.id, plan }); reload(); } catch (e) { toast({ kind: 'err', text: (e as Error).message }); }
   };
   const doToggle = async () => {
     if (!toggle) return; setBusy(true);
@@ -89,7 +81,8 @@ export default function Platform() {
                 return (
                   <div key={o.id} className={`card p-4 ${ok ? '' : 'border-red-200'}`}>
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
+                      <img src={logoUrl(o.logo_path)} alt="" className="size-12 rounded-xl object-contain bg-ink-50 border border-ink-200 shrink-0" />
+                      <div className="min-w-0 flex-1">
                         <div className="font-bold text-[17px] truncate">{o.name}</div>
                         <div className="text-sm text-ink-500 truncate">{[o.governorate, o.contact_phone].filter(Boolean).join(' · ') || '—'}</div>
                       </div>
@@ -104,12 +97,10 @@ export default function Platform() {
                     </div>
                     <div className="text-sm text-ink-500 mt-3 leading-6">
                       الاشتراك لحد: <b className="text-ink-900">{o.subscription_ends ? dateAr(o.subscription_ends) : 'مفتوح'}</b><br />
-                      آخر نشاط: {o.last_activity ? timeAgo(o.last_activity) : 'ما بدأوا بعد'}
+                      باقة {PLAN[o.plan]} · آخر نشاط: {o.last_activity ? timeAgo(o.last_activity) : 'ما بدأوا بعد'}
                     </div>
                     <div className="flex items-center gap-2 mt-3">
-                      <select className="input h-10 text-sm flex-1" value={o.plan} onChange={(e) => setPlan(o, e.target.value)} aria-label={`باقة ${o.name}`}>
-                        {Object.entries(PLAN).map(([k, l]) => <option key={k} value={k}>باقة {l}</option>)}
-                      </select>
+                      <button className="btn-ghost btn-sm flex-1" onClick={() => setDetailsId(o.id)}><SlidersHorizontal className="size-4" />تفاصيل وتعديل</button>
                       <button className="btn-ghost btn-sm" onClick={() => setExtend(o)}><CalendarPlus className="size-4" />تجديد</button>
                       <button className={`btn-ghost btn-sm ${o.status === 'active' ? 'text-red-700' : ''}`} onClick={() => setToggle(o)} aria-label={o.status === 'active' ? 'إيقاف' : 'تفعيل'}>
                         {o.status === 'active' ? <PauseCircle className="size-4" /> : <PlayCircle className="size-4" />}
@@ -158,6 +149,7 @@ export default function Platform() {
           ))}
         </div>
       </Modal>
+      <OrgDetails org={list.find((o) => o.id === detailsId) ?? null} onClose={() => setDetailsId(null)} onChanged={reload} />
       <Confirm open={!!toggle} onClose={() => setToggle(null)} busy={busy} danger={toggle?.status === 'active'}
         title={toggle?.status === 'active' ? 'إيقاف المؤسسة' : 'تفعيل المؤسسة'} confirmLabel={toggle?.status === 'active' ? 'أوقف' : 'فعّل'} onConfirm={doToggle}
         text={toggle?.status === 'active' ? <>كل فريق <b>{toggle?.name}</b> راح يطلع وما يكدرون يدخلون لحد ما ترجعها. بياناتهم تبقى محفوظة.</> : <>راح يرجع فريق <b>{toggle?.name}</b> يكدرون يدخلون.</>} />

@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import { ChevronRight, Phone, Navigation, Pencil, QrCode, Printer, PauseCircle, PlayCircle, Trash2, Gift, ClipboardCheck, Wallet } from 'lucide-react';
 import { supabase, errText, type Family } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
+import { logoUrl } from '../lib/logo';
 import { TIER, catLabel, BREADWINNER, HOUSING, money, num, dateAr, DIST_STATUS, EXPENSE_KIND, FAMILY_STATUS } from '../lib/format';
 import { useLoad, Section, ListSkeleton, ErrorBox, Modal, Confirm, useToast, Tabs } from '../components/ui';
 import { FamilyMap } from '../components/Maps';
@@ -166,7 +167,7 @@ export default function FamilyView() {
 
       <Modal open={qrOpen} onClose={() => setQrOpen(false)} title="بطاقة العائلة">
         <div id="family-card" className="rounded-2xl border-2 border-brand-700 p-5 text-center">
-          <div className="flex items-center justify-center gap-2 font-bold text-brand-800"><img src={`${import.meta.env.BASE_URL}logo.svg`} width={32} height={32} alt="" className="rounded-lg" />{org?.name}</div>
+          <div className="flex items-center justify-center gap-2 font-bold text-brand-800"><img src={logoUrl(org?.logo_path)} width={32} height={32} alt="" className="rounded-lg object-contain" />{org?.name}</div>
           {qr && <img src={qr} alt={`رمز QR للعائلة ${f.code}`} className="mx-auto mt-3 w-48 h-48" />}
           <div className="text-2xl font-bold mt-2 num">{f.code}</div>
           <div className="font-semibold mt-1">{f.head_name}</div>

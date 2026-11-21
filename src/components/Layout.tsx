@@ -6,6 +6,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { logoUrl } from '../lib/logo';
 import { supabase, type Role } from '../lib/supabase';
 import { ROLE_LABEL } from '../lib/format';
 import { syncQueue, useOfflineQueue, useOnline } from '../lib/offline';
@@ -45,7 +46,8 @@ const SHORT: Record<string, string> = {
 };
 
 function Logo({ size = 44 }: { size?: number }) {
-  return <img src={`${import.meta.env.BASE_URL}logo.svg`} width={size} height={size} alt="" className="rounded-xl shrink-0" />;
+  const { org } = useAuth();
+  return <img src={logoUrl(org?.logo_path)} width={size} height={size} alt="" className="rounded-xl shrink-0 object-contain bg-white/95" />;
 }
 
 function useAlerts() {

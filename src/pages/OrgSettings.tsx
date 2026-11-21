@@ -4,6 +4,7 @@ import { supabase, errText, type Org } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { PLAN, dateAr, money, GOVERNORATES } from '../lib/format';
 import { PageHeader, Field, useToast } from '../components/ui';
+import LogoPicker from '../components/LogoPicker';
 
 export default function OrgSettings() {
   const { org, setOrg } = useAuth();
@@ -36,6 +37,7 @@ export default function OrgSettings() {
           <div className="text-sm text-ink-700">{org!.subscription_ends ? <>فعّال لحد <b>{dateAr(org!.subscription_ends)}</b>. للتجديد تواصل ويا إدارة المنصة.</> : 'اشتراك مفتوح.'}</div>
         </div>
       </div>
+      <div className="card p-5 mb-4"><LogoPicker orgId={org!.id} path={org!.logo_path} onChange={(p) => { setOrg({ ...org!, logo_path: p }); toast({ kind: 'ok', text: p ? 'انحفظ الشعار' : 'انحذف الشعار' }); }} /></div>
       <form onSubmit={save} className="card p-5 space-y-4" noValidate>
         <Field label="اسم المؤسسة" required hint="يطلع بالواجهة والوصولات وبطاقات العوائل"><input className="input" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} /></Field>
         <Field label="وصف قصير"><input className="input" value={v.tagline} onChange={(e) => setV({ ...v, tagline: e.target.value })} /></Field>
