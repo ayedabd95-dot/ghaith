@@ -11,17 +11,16 @@ const ALLOWED: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png
 export default function ExpenseForm() {
   const nav = useNavigate();
   const toast = useToast();
-  const { can } = useAuth();
+  const { can, org } = useAuth();
   const [sp] = useSearchParams();
   const presetFamily = sp.get('family') ?? '';
   const { data } = useLoad(async () => {
-    const [f, s, fam, c] = await Promise.all([
+    const [f, fam, c] = await Promise.all([
       supabase.from('ch_fund_balances').select('*'),
-      supabase.from('ch_settings').select('value').eq('key', 'approval_threshold').maybeSingle(),
       presetFamily ? supabase.from('ch_families').select('id,head_name').eq('id', presetFamily).maybeSingle() : Promise.resolve({ data: null }),
       supabase.from('ch_campaigns').select('id,name').eq('status', 'active'),
     ]);
-    return { funds: (f.data ?? []) as Fund[], threshold: Number(s.data?.value ?? 0), family: fam.data as { id: string; head_name: string } | null, camps: c.data ?? [] };
+    return { funds: (f.data ?? []) as Fund[], threshold: Number(org?.approval_threshold ?? 0), family: fam.data as { id: string; head_name: string } | null, camps: c.data ?? [] };
   });
   const [v, setV] = useState({ amount: '', kind: presetFamily ? 'cash_aid' : 'food', description: '', fund_id: '', purpose: 'general', vendor: '', campaign_id: '' });
   const [file, setFile] = useState<File | null>(null);
@@ -48,7 +47,7 @@ export default function ExpenseForm() {
       let invoice_path: string | null = null;
       if (file) {
         const ext = ALLOWED[file.type];
-        invoice_path = `${new Date().getFullYear()}/${crypto.randomUUID()}.${ext}`;
+        invoice_path = `${org!.id}/${new Date().getFullYear()}/${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage.from('ch-invoices').upload(invoice_path, file, { contentType: file.type, upsert: false });
         if (upErr) throw upErr;
       }

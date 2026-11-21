@@ -1,12 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase, phoneToEmail, type Profile, type Role } from './supabase';
+import { supabase, phoneToEmail, type Org, type Profile, type Role } from './supabase';
 import { setQueueOwner, clearQueue } from './offline';
 
 interface AuthState {
   session: Session | null;
   profile: Profile | null;
+  org: Org | null;
+  setOrg: (o: Org) => void;
   loading: boolean;
+  blockedReason: string | null;
   idleWarning: boolean;
   signIn: (phone: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -19,28 +22,41 @@ export const useAuth = () => useContext(Ctx);
 
 /** Office roles are signed out after 30 idle minutes; field roles stay signed in for 7 days. */
 const IDLE_MS: Record<Role, number> = {
-  admin: 30 * 60_000, accountant: 30 * 60_000, auditor: 30 * 60_000,
+  owner: 30 * 60_000, admin: 30 * 60_000, accountant: 30 * 60_000, auditor: 30 * 60_000,
   researcher: 7 * 86_400_000, distributor: 7 * 86_400_000, warehouse: 7 * 86_400_000,
 };
-const LAST_KEY = 'alrahma-last-active';
+const LAST_KEY = 'ghaith-last-active';
+
+export const orgIsLive = (o: Org | null) => !!o && o.status === 'active' && (!o.subscription_ends || o.subscription_ends >= new Date().toISOString().slice(0, 10));
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [org, setOrg] = useState<Org | null>(null);
+  const [blockedReason, setBlocked] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [idleWarning, setIdleWarning] = useState(false);
   const profileRef = useRef<Profile | null>(null);
 
-  const loadProfile = useCallback(async (s: Session | null) => {
-    if (!s) { setProfile(null); profileRef.current = null; return; }
+  const loadProfile = useCallback(async (s: Session | null): Promise<string | null> => {
+    if (!s) { setProfile(null); profileRef.current = null; return null; }
     const { data } = await supabase.from('ch_profiles').select('*').eq('id', s.user.id).maybeSingle();
-    if (!data || !data.active) {
-      await supabase.auth.signOut();
-      setSession(null); setProfile(null); profileRef.current = null;
-      return;
+    let reason: string | null = !data ? 'هذا الحساب مو مسجل بأي مؤسسة على منصة غيث' : !data.active ? 'هذا الحساب موقوف، راجع مدير مؤسستك' : null;
+    let o: Org | null = null;
+    if (!reason && data.role !== 'owner') {
+      const { data: od } = await supabase.from('ch_orgs').select('*').eq('id', data.org_id).maybeSingle();
+      o = od as Org | null;
+      if (!orgIsLive(o)) reason = 'اشتراك مؤسستك بمنصة غيث متوقف أو منتهي. تواصل ويا إدارة المنصة حتى يتجدد.';
     }
+    if (reason) {
+      await supabase.auth.signOut();
+      setSession(null); setProfile(null); setOrg(null); profileRef.current = null; setBlocked(reason);
+      return reason;
+    }
+    setBlocked(null); setOrg(o);
     setProfile(data as Profile); profileRef.current = data as Profile;
     setQueueOwner(data.id);
+    return null;
   }, []);
 
   useEffect(() => {
@@ -58,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
-      if (event === 'SIGNED_OUT') { setProfile(null); profileRef.current = null; }
+      if (event === 'SIGNED_OUT') { setProfile(null); setOrg(null); profileRef.current = null; }
     });
     return () => sub.subscription.unsubscribe();
   }, [loadProfile]);
@@ -70,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setQueueOwner(null);
     await supabase.auth.signOut();
     localStorage.removeItem(LAST_KEY);
-    setSession(null); setProfile(null); profileRef.current = null;
+    setSession(null); setProfile(null); setOrg(null); profileRef.current = null;
   }, []);
 
   // Idle tracking
@@ -99,15 +115,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     localStorage.setItem(LAST_KEY, String(Date.now()));
     setSession(data.session);
-    await loadProfile(data.session);
-    if (!profileRef.current) return 'هذا الحساب مو مسجل بفريق المؤسسة';
+    const reason = await loadProfile(data.session);
+    if (reason) return reason;
     return null;
   }, [loadProfile]);
 
   const can = useCallback((...roles: Role[]) => !!profile && roles.includes(profile.role), [profile]);
 
   return (
-    <Ctx.Provider value={{ session, profile, loading, idleWarning, signIn, signOut, stayActive, can }}>
+    <Ctx.Provider value={{ session, profile, org, setOrg, blockedReason, loading, idleWarning, signIn, signOut, stayActive, can }}>
       {children}
     </Ctx.Provider>
   );

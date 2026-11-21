@@ -25,12 +25,15 @@ const Team = lazy(() => import('./pages/Team'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Activity = lazy(() => import('./pages/Activity'));
 const Account = lazy(() => import('./pages/Account'));
+const Platform = lazy(() => import('./pages/Platform'));
+const OrgSettings = lazy(() => import('./pages/OrgSettings'));
 
-function Guard({ roles, children }: { roles?: Role[]; children: ReactNode }) {
+function Guard({ roles, allowOwner, children }: { roles?: Role[]; allowOwner?: boolean; children: ReactNode }) {
   const { profile, loading } = useAuth();
   if (loading) return <div className="p-6"><ListSkeleton /></div>;
   if (!profile) return <Navigate to="/login" replace />;
-  if (roles && !roles.includes(profile.role)) return <Navigate to="/" replace />;
+  if (profile.role === 'owner' && !allowOwner && !roles?.includes('owner')) return <Navigate to="/platform" replace />;
+  if (roles && !roles.includes(profile.role)) return <Navigate to={profile.role === 'owner' ? '/platform' : '/'} replace />;
   return <>{children}</>;
 }
 
@@ -45,11 +48,13 @@ export default function App() {
           <Suspense fallback={<div className="p-6"><ListSkeleton /></div>}>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route element={<Guard><Layout /></Guard>}>
-                <Route index element={<Dashboard />} />
-                <Route path="families" element={<Families />} />
+              <Route element={<Guard allowOwner><Layout /></Guard>}>
+                <Route index element={<Guard><Dashboard /></Guard>} />
+                <Route path="platform" element={<Guard roles={['owner']}><Platform /></Guard>} />
+                <Route path="settings" element={<Guard roles={['admin']}><OrgSettings /></Guard>} />
+                <Route path="families" element={<Guard><Families /></Guard>} />
                 <Route path="families/new" element={<Guard roles={['admin', 'researcher']}><FamilyForm /></Guard>} />
-                <Route path="families/:id" element={<FamilyView />} />
+                <Route path="families/:id" element={<Guard><FamilyView /></Guard>} />
                 <Route path="families/:id/edit" element={<Guard roles={['admin', 'researcher']}><FamilyForm /></Guard>} />
                 <Route path="finance" element={<Guard roles={[...OFFICE, 'warehouse']}><Finance /></Guard>} />
                 <Route path="finance/donation" element={<Guard roles={['admin', 'accountant']}><DonationForm /></Guard>} />
@@ -61,11 +66,11 @@ export default function App() {
                 <Route path="campaigns/new" element={<Guard roles={['admin']}><CampaignForm /></Guard>} />
                 <Route path="campaigns/:id" element={<Guard roles={STAFF}><CampaignView /></Guard>} />
                 <Route path="route" element={<Guard roles={['distributor', 'admin']}><RoutePage /></Guard>} />
-                <Route path="map" element={<FamiliesMap />} />
+                <Route path="map" element={<Guard><FamiliesMap /></Guard>} />
                 <Route path="team" element={<Guard roles={['admin', 'auditor']}><Team /></Guard>} />
                 <Route path="reports" element={<Guard roles={OFFICE}><Reports /></Guard>} />
                 <Route path="activity" element={<Guard roles={['admin', 'auditor']}><Activity /></Guard>} />
-                <Route path="account" element={<Account />} />
+                <Route path="account" element={<Guard allowOwner><Account /></Guard>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>

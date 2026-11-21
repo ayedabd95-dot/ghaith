@@ -5,12 +5,12 @@ import { useAuth } from '../lib/auth';
 import { Modal } from '../components/ui';
 
 export default function Login() {
-  const { profile, signIn, loading } = useAuth();
+  const { profile, signIn, loading, blockedReason } = useAuth();
   const nav = useNavigate();
   const [phone, setPhone] = useState('');
   const [pw, setPw] = useState('');
   const [show, setShow] = useState(false);
-  const [err, setErr] = useState<{ phone?: string; pw?: string; form?: string }>({});
+  const [err, setErr] = useState<{ phone?: string; pw?: string; form?: string }>(() => (blockedReason ? { form: blockedReason } : {}));
   const [busy, setBusy] = useState(false);
   const [help, setHelp] = useState(false);
 
@@ -36,11 +36,11 @@ export default function Login() {
       <div className="relative hidden lg:flex flex-col justify-between bg-brand-900 text-white p-12 overflow-hidden">
         <div className="flex items-center gap-3">
           <img src={`${import.meta.env.BASE_URL}logo.svg`} width={52} height={52} alt="" className="rounded-xl" />
-          <div><div className="font-bold text-xl">مؤسسة الرحمة الخيرية</div><div className="text-white/70 text-sm">للرعاية والتنمية المجتمعية</div></div>
+          <div><div className="font-bold text-xl">منصة غيث</div><div className="text-white/70 text-sm">لإدارة العمل الخيري</div></div>
         </div>
         <div className="max-w-md">
-          <h1 className="text-4xl font-bold leading-[1.4]">معاً… لرعاية المحتاجين<br />وبناء مجتمع متكافل</h1>
-          <p className="mt-4 text-white/80 leading-8 text-lg">كل عائلة مسجلة بموقعها وتقييمها، وكل دينار له وصل، وكل سلة توصل لصاحبها.</p>
+          <h1 className="text-4xl font-bold leading-[1.4]">غيث… يوصل الخير<br />لمستحقه بالضبط</h1>
+          <p className="mt-4 text-white/80 leading-8 text-lg">منصة تدير بيها مؤسستك الخيرية: كل عائلة مسجلة بموقعها وتقييمها، وكل دينار له وصل، وكل سلة توصل لصاحبها.</p>
         </div>
         <div className="flex items-center gap-2 text-sm text-white/70"><ShieldCheck className="size-5 text-gold-500" />بيانات العوائل محمية ولا يشوفها إلا الفريق المخوّل.</div>
         <div aria-hidden className="absolute -bottom-32 -start-32 size-96 rounded-full border-[40px] border-gold-500/15" />
@@ -50,11 +50,11 @@ export default function Login() {
         <div className="w-full max-w-sm mx-auto">
           <div className="lg:hidden flex flex-col items-center text-center mb-8">
             <img src={`${import.meta.env.BASE_URL}logo.svg`} width={72} height={72} alt="" className="rounded-2xl" />
-            <div className="font-bold text-xl mt-3">مؤسسة الرحمة الخيرية</div>
-            <div className="text-ink-500 text-sm">للرعاية والتنمية المجتمعية</div>
+            <div className="font-bold text-xl mt-3">منصة غيث</div>
+            <div className="text-ink-500 text-sm">لإدارة العمل الخيري</div>
           </div>
           <h2 className="text-2xl font-bold">تسجيل الدخول</h2>
-          <p className="text-ink-500 mt-1">ادخل برقم هاتفك وكلمة السر اللي استلمتها من مدير النظام.</p>
+          <p className="text-ink-500 mt-1">ادخل برقم هاتفك وكلمة السر اللي استلمتها من مدير مؤسستك.</p>
 
           <form onSubmit={submit} className="mt-7 space-y-5" noValidate>
             <label className="block">
@@ -91,7 +91,7 @@ export default function Login() {
       </div>
 
       <Modal open={help} onClose={() => setHelp(false)} title="نسيت كلمة السر">
-        <p className="leading-8 text-ink-700">تواصل ويا <b>مدير النظام</b> بالمؤسسة. يكدر يسويلك كلمة سر جديدة من صفحة «الفريق» خلال دقيقة، وبعدها تدخل وتغيّرها من «حسابي».</p>
+        <p className="leading-8 text-ink-700">تواصل ويا <b>مدير مؤسستك</b>. يكدر يسويلك كلمة سر جديدة من صفحة «الفريق» خلال دقيقة، وبعدها تدخل وتغيّرها من «حسابي».</p>
         <button className="btn-primary w-full mt-6" onClick={() => setHelp(false)}>تمام</button>
       </Modal>
     </div>

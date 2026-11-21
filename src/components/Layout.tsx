@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Users, Wallet, ClipboardCheck, Package, Truck, Map, UsersRound, BarChart3, History, UserCircle,
-  Bell, Search, Plus, LogOut, WifiOff, CloudUpload, ScanLine, Receipt, ShoppingCart, UserPlus, X, Menu,
+  Bell, Search, Plus, LogOut, Building2, Settings, WifiOff, CloudUpload, ScanLine, Receipt, ShoppingCart, UserPlus, X, Menu,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
@@ -11,23 +11,26 @@ import { ROLE_LABEL } from '../lib/format';
 import { syncQueue, useOfflineQueue, useOnline } from '../lib/offline';
 import { Confirm, Modal, useToast } from './ui';
 
-interface NavItem { to: string; label: string; icon: LucideIcon; roles: Role[] | 'all' }
+interface NavItem { to: string; label: string; icon: LucideIcon; roles: Role[] | 'org' | 'any' }
 const NAV: NavItem[] = [
-  { to: '/', label: 'الرئيسية', icon: Home, roles: 'all' },
-  { to: '/families', label: 'العوائل والمستفيدون', icon: Users, roles: 'all' },
+  { to: '/', label: 'الرئيسية', icon: Home, roles: 'org' },
+  { to: '/platform', label: 'المؤسسات المشتركة', icon: Building2, roles: ['owner'] },
+  { to: '/families', label: 'العوائل والمستفيدون', icon: Users, roles: 'org' },
   { to: '/route', label: 'مساري اليوم', icon: Truck, roles: ['distributor'] },
   { to: '/finance', label: 'التبرعات والصناديق', icon: Wallet, roles: ['admin', 'accountant', 'auditor', 'warehouse'] },
   { to: '/approvals', label: 'الموافقات', icon: ClipboardCheck, roles: ['admin'] },
   { to: '/inventory', label: 'المخزون والسلات', icon: Package, roles: ['admin', 'warehouse', 'accountant', 'auditor'] },
   { to: '/campaigns', label: 'الحملات والتوزيع', icon: Truck, roles: ['admin', 'accountant', 'auditor', 'warehouse', 'researcher'] },
-  { to: '/map', label: 'خريطة العوائل', icon: Map, roles: 'all' },
+  { to: '/map', label: 'خريطة العوائل', icon: Map, roles: 'org' },
   { to: '/team', label: 'الفريق والمتطوعون', icon: UsersRound, roles: ['admin', 'auditor'] },
   { to: '/reports', label: 'التقارير والإحصائيات', icon: BarChart3, roles: ['admin', 'accountant', 'auditor'] },
   { to: '/activity', label: 'سجل النشاطات', icon: History, roles: ['admin', 'auditor'] },
-  { to: '/account', label: 'حسابي', icon: UserCircle, roles: 'all' },
+  { to: '/settings', label: 'إعدادات المؤسسة', icon: Settings, roles: ['admin'] },
+  { to: '/account', label: 'حسابي', icon: UserCircle, roles: 'any' },
 ];
 
 const BOTTOM: Record<Role, string[]> = {
+  owner: ['/platform', '/account'],
   admin: ['/', '/families', '/campaigns', '/reports'],
   accountant: ['/', '/finance', '/campaigns', '/reports'],
   auditor: ['/', '/finance', '/reports', '/activity'],
@@ -36,6 +39,7 @@ const BOTTOM: Record<Role, string[]> = {
   warehouse: ['/', '/inventory', '/finance', '/account'],
 };
 const SHORT: Record<string, string> = {
+  '/platform': 'المؤسسات', '/settings': 'الإعدادات',
   '/': 'الرئيسية', '/families': 'العوائل', '/route': 'مساري', '/finance': 'المالية', '/inventory': 'المخزن',
   '/campaigns': 'الحملات', '/map': 'الخريطة', '/reports': 'التقارير', '/activity': 'السجل', '/account': 'حسابي',
 };
@@ -49,7 +53,7 @@ function useAlerts() {
   const loc = useLocation();
   const [alerts, setAlerts] = useState<{ text: string; to: string; n: number; tone: string }[]>([]);
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || profile.role === 'owner') return;
     (async () => {
       const out: { text: string; to: string; n: number; tone: string }[] = [];
       const { count: visits } = await supabase.from('ch_families').select('id', { count: 'exact', head: true }).eq('status', 'pending_visit');
@@ -78,7 +82,9 @@ const gDate = today.toLocaleDateString('ar-IQ-u-nu-latn', { weekday: 'long', day
 const hDate = (() => { try { return today.toLocaleDateString('ar-SA-u-ca-islamic-umalqura-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }); } catch { return ''; } })();
 
 export default function Layout() {
-  const { profile, signOut, idleWarning, stayActive } = useAuth();
+  const { profile, org, signOut, idleWarning, stayActive } = useAuth();
+  const orgName = org?.name ?? 'منصة غيث';
+  const orgSub = org ? 'على منصة غيث' : 'إدارة المنصة';
   const nav = useNavigate();
   const loc = useLocation();
   const toast = useToast();
@@ -101,7 +107,7 @@ export default function Layout() {
   useEffect(() => { if (online && queue.length) syncQueue().then((n) => n && toast({ kind: 'ok', text: `انرفعت ${n} استمارة كانت محفوظة بالجهاز` })); }, [online]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const role = profile!.role;
-  const items = useMemo(() => NAV.filter((n) => n.roles === 'all' || n.roles.includes(role)), [role]);
+  const items = useMemo(() => NAV.filter((n) => n.roles === 'any' || (n.roles === 'org' ? role !== 'owner' : n.roles.includes(role))), [role]);
   const bottom = BOTTOM[role].map((to) => NAV.find((n) => n.to === to)!).filter(Boolean);
   const alertCount = alerts.reduce((s, a) => s + a.n, 0);
 
@@ -160,7 +166,7 @@ export default function Layout() {
       <aside className="hidden lg:flex fixed inset-y-0 start-0 w-72 bg-brand-900 text-white flex-col no-print z-30">
         <div className="flex items-center gap-3 px-5 h-20 border-b border-white/10">
           <Logo />
-          <div><div className="font-bold text-[17px]">مؤسسة الرحمة الخيرية</div><div className="text-xs text-white/70">للرعاية والتنمية المجتمعية</div></div>
+          <div className="min-w-0"><div className="font-bold text-[17px] truncate">{orgName}</div><div className="text-xs text-white/70 truncate">{orgSub}</div></div>
         </div>
         <div className="flex-1 overflow-y-auto"><SideNav /></div>
       </aside>
@@ -171,17 +177,17 @@ export default function Layout() {
           <button className="lg:hidden size-11 grid place-items-center rounded-xl hover:bg-white/10" aria-label="فتح القائمة" aria-expanded={drawer} onClick={() => setDrawer(true)}><Menu className="size-6" /></button>
           <div className="lg:hidden flex items-center gap-2 min-w-0 flex-1">
             <Logo size={36} />
-            <div className="min-w-0"><div className="font-bold text-[15px] truncate">مؤسسة الرحمة الخيرية</div><div className="text-[11px] text-white/70 truncate">أهلاً {profile!.full_name.split(' ')[0]} · {ROLE_LABEL[role]}</div></div>
+            <div className="min-w-0"><div className="font-bold text-[15px] truncate">{orgName}</div><div className="text-[11px] text-white/70 truncate">أهلاً {profile!.full_name.split(' ')[0]} · {ROLE_LABEL[role]}</div></div>
           </div>
           <div className="hidden lg:block text-sm leading-6 shrink-0"><div className="font-semibold">{gDate}</div><div className="text-white/70">{hDate}</div></div>
-          <form onSubmit={search} className="hidden lg:flex flex-1 max-w-md mx-auto relative" role="search">
+          {role === 'owner' ? <div className="flex-1" /> : <form onSubmit={search} className="hidden lg:flex flex-1 max-w-md mx-auto relative" role="search">
             <Search className="size-5 absolute start-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" />
             <input value={q} onChange={(e) => setQ(e.target.value)} className="w-full h-11 rounded-xl bg-white text-ink-900 ps-10 pe-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-gold-500" placeholder="بحث عن عائلة، رقم هاتف أو رمز…" aria-label="بحث" />
-          </form>
+          </form>}
           {quick.length > 0 && (
             <button className="hidden lg:inline-flex btn h-11 border border-brand-500 text-white hover:bg-white/10" onClick={() => setAddOpen(true)}><Plus className="size-5" />إضافة جديدة</button>
           )}
-          {Bell_}
+          {role !== 'owner' && Bell_}
           <NavLink to="/account" className="hidden lg:flex items-center gap-3 ps-3 border-s border-white/15">
             <div className="text-end"><div className="text-xs text-white/70">{ROLE_LABEL[role]}</div><div className="font-semibold">{profile!.full_name}</div></div>
             <span className="size-11 rounded-full bg-gold-500 grid place-items-center font-bold text-lg">{profile!.full_name.charAt(0)}</span>

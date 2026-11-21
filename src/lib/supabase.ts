@@ -1,14 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
 export const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'alrahma-auth' },
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'ghaith-auth' },
 });
 
 export const phoneToEmail = (phone: string) => `${phone}@alrahma.local`;
 
-export type Role = 'admin' | 'accountant' | 'researcher' | 'warehouse' | 'distributor' | 'auditor';
+export type Role = 'owner' | 'admin' | 'accountant' | 'researcher' | 'warehouse' | 'distributor' | 'auditor';
 
-export interface Profile { id: string; full_name: string; phone: string; role: Role; active: boolean; created_at: string }
+export interface Profile { id: string; full_name: string; phone: string; role: Role; active: boolean; org_id: string | null; created_at: string }
+export interface Org {
+  id: string; name: string; tagline: string | null; governorate: string | null; contact_phone: string | null;
+  status: 'active' | 'suspended'; plan: 'trial' | 'basic' | 'pro'; subscription_ends: string | null; approval_threshold: number; created_at: string;
+}
 
 export interface Family {
   id: string; code: string; head_name: string; phone: string; national_id: string | null;

@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { supabase } from './supabase';
 
 /** Family reports saved on the device while there is no connection, sent when it comes back. */
-const PREFIX = 'alrahma-offline-families:';
+const PREFIX = 'ghaith-offline-families:';
 let owner = '';
 const key = () => PREFIX + owner;
 type Draft = Record<string, unknown> & { _local_id: string; _saved_at: string };

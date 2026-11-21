@@ -27,7 +27,7 @@ export default function FamilyView() {
   const { id } = useParams();
   const nav = useNavigate();
   const toast = useToast();
-  const { can } = useAuth();
+  const { can, org } = useAuth();
   const [tab, setTab] = useState<'info' | 'aid'>('info');
   const [qrOpen, setQrOpen] = useState(false);
   const [qr, setQr] = useState('');
@@ -166,13 +166,13 @@ export default function FamilyView() {
 
       <Modal open={qrOpen} onClose={() => setQrOpen(false)} title="بطاقة العائلة">
         <div id="family-card" className="rounded-2xl border-2 border-brand-700 p-5 text-center">
-          <div className="flex items-center justify-center gap-2 font-bold text-brand-800"><img src={`${import.meta.env.BASE_URL}logo.svg`} width={32} height={32} alt="" className="rounded-lg" />مؤسسة الرحمة الخيرية</div>
+          <div className="flex items-center justify-center gap-2 font-bold text-brand-800"><img src={`${import.meta.env.BASE_URL}logo.svg`} width={32} height={32} alt="" className="rounded-lg" />{org?.name}</div>
           {qr && <img src={qr} alt={`رمز QR للعائلة ${f.code}`} className="mx-auto mt-3 w-48 h-48" />}
           <div className="text-2xl font-bold mt-2 num">{f.code}</div>
           <div className="font-semibold mt-1">{f.head_name}</div>
           <p className="text-xs text-ink-500 mt-2">تُبرز هذه البطاقة عند استلام المساعدة</p>
         </div>
-        <button className="btn-primary w-full mt-4" onClick={() => printCard(qr, f)}><Printer className="size-5" />طباعة البطاقة</button>
+        <button className="btn-primary w-full mt-4" onClick={() => printCard(qr, f, org?.name ?? '')}><Printer className="size-5" />طباعة البطاقة</button>
       </Modal>
       <Confirm open={del} onClose={() => setDel(false)} danger busy={busy} title="حذف العائلة" confirmLabel="احذف نهائياً" onConfirm={remove}
         text={<>راح تنحذف <b>{f.head_name}</b> وكل سجل توزيعها. إذا تريد توقفها مؤقتاً استخدم «إيقاف» بدل الحذف.</>} />
@@ -182,7 +182,7 @@ export default function FamilyView() {
 
 const esc = (v: string) => v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
-function printCard(qr: string, f: Family) {
+function printCard(qr: string, f: Family, orgName: string) {
   const w = window.open('', '_blank', 'width=420,height=600');
   if (!w) return;
   w.document.write(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>بطاقة ${esc(f.code)}</title>
@@ -190,7 +190,7 @@ function printCard(qr: string, f: Family) {
   <style>body{font-family:'IBM Plex Sans Arabic',sans-serif;display:grid;place-items:center;margin:0;padding:24px}
   .c{width:85mm;border:2px solid #145f39;border-radius:14px;padding:14px;text-align:center}
   h1{font-size:16px;color:#0b3a23;margin:0}img{width:44mm;height:44mm}.code{font-size:22px;font-weight:700;direction:ltr}
-  p{margin:4px 0;font-size:13px}</style></head><body><div class="c"><h1>مؤسسة الرحمة الخيرية</h1><img src="${qr}"><div class="code">${esc(f.code)}</div>
+  p{margin:4px 0;font-size:13px}</style></head><body><div class="c"><h1>${esc(orgName)}</h1><img src="${qr}"><div class="code">${esc(f.code)}</div>
   <p><b>${esc(f.head_name)}</b></p><p>${esc(f.neighborhood)}</p><p style="color:#666;font-size:11px">تُبرز هذه البطاقة عند استلام المساعدة</p></div>
   <script>onload=()=>setTimeout(()=>print(),300)</script></body></html>`);
   w.document.close();

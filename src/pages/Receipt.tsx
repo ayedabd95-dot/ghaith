@@ -3,10 +3,12 @@ import { ChevronRight, Printer, MessageCircle } from 'lucide-react';
 import { supabase, type Donation } from '../lib/supabase';
 import { money, METHOD, PURPOSE, dateAr, num } from '../lib/format';
 import { useLoad, ListSkeleton, ErrorBox } from '../components/ui';
+import { useAuth } from '../lib/auth';
 
 export default function Receipt() {
   const { id } = useParams();
   const nav = useNavigate();
+  const { org } = useAuth();
   const { data, loading, error } = useLoad(async () => {
     const { data, error } = await supabase.from('ch_donations').select('*, ch_funds(name)').eq('id', id!).single();
     if (error) throw error;
@@ -16,7 +18,7 @@ export default function Receipt() {
   if (loading || !data) return <ListSkeleton />;
   const d = data;
   const wa = d.donor_phone
-    ? `https://wa.me/964${d.donor_phone.slice(1)}?text=${encodeURIComponent(`السلام عليكم ${d.donor_name}،\nاستلمت مؤسسة الرحمة الخيرية تبرعكم بمبلغ ${money(d.amount_iqd)}${d.currency === 'USD' ? ` ($${num(d.amount)})` : ''}.\nرقم الوصل: ${d.receipt_no}\nالتاريخ: ${dateAr(d.created_at)}\nجزاكم الله خيراً، وراح نبعثلكم تقرير بأثر تبرعكم.`)}`
+    ? `https://wa.me/964${d.donor_phone.slice(1)}?text=${encodeURIComponent(`السلام عليكم ${d.donor_name}،\nاستلمت ${org?.name ?? ''} تبرعكم بمبلغ ${money(d.amount_iqd)}${d.currency === 'USD' ? ` ($${num(d.amount)})` : ''}.\nرقم الوصل: ${d.receipt_no}\nالتاريخ: ${dateAr(d.created_at)}\nجزاكم الله خيراً، وراح نبعثلكم تقرير بأثر تبرعكم.`)}`
     : null;
 
   return (
@@ -28,7 +30,7 @@ export default function Receipt() {
       <div className="card p-6 print-full">
         <div className="flex items-center justify-between border-b border-ink-200 pb-4">
           <div className="flex items-center gap-3"><img src={`${import.meta.env.BASE_URL}logo.svg`} width={48} height={48} alt="" className="rounded-xl" />
-            <div><div className="font-bold">مؤسسة الرحمة الخيرية</div><div className="text-xs text-ink-500">للرعاية والتنمية المجتمعية</div></div></div>
+            <div><div className="font-bold">{org?.name}</div><div className="text-xs text-ink-500">{org?.tagline}</div></div></div>
           <div className="text-end"><div className="text-xs text-ink-500">رقم الوصل</div><div className="text-2xl font-bold num">#{d.receipt_no}</div></div>
         </div>
         <dl className="divide-y divide-ink-100 text-[15px]">

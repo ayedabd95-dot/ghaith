@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { BarChart3, Printer, Download } from 'lucide-react';
 import { supabase, type Donation, type Expense, type Fund } from '../lib/supabase';
 import { money, pct, num, METHOD, PURPOSE, EXPENSE_KIND, monthKey, TIER, CATEGORIES, toCSV, dateAr } from '../lib/format';
+import { useAuth } from '../lib/auth';
 import { useLoad, PageHeader, ListSkeleton, ErrorBox, Section } from '../components/ui';
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => { const d = new Date(); d.setMonth(d.getMonth() - i, 1); return monthKey(d); });
@@ -21,6 +22,7 @@ function Bars({ rows }: { rows: { l: string; v: number }[] }) {
 }
 
 export default function Reports() {
+  const { org } = useAuth();
   const [month, setMonth] = useState(MONTHS[0]);
   const { data, loading, error, reload } = useLoad(async () => {
     const [d, e, f, fam, dist] = await Promise.all([
@@ -69,7 +71,7 @@ export default function Reports() {
           <button className="btn-primary" onClick={() => window.print()}><Printer className="size-5" />طباعة</button>
         </div>} />
 
-      <div className="hidden print:block text-center mb-4"><div className="text-xl font-bold">مؤسسة الرحمة الخيرية — التقرير المالي</div><div>{month === 'all' ? 'كل الفترات' : label(month)}</div></div>
+      <div className="hidden print:block text-center mb-4"><div className="text-xl font-bold">{org?.name} — التقرير المالي</div><div>{month === 'all' ? 'كل الفترات' : label(month)}</div></div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[{ l: 'الواردات', v: money(r.inc) }, { l: 'المصروفات المعتمدة', v: money(r.out) }, { l: 'الصافي', v: money(r.inc - r.out) }, { l: 'سلات وزعت', v: num(r.baskets) }].map((x) => (

@@ -18,7 +18,7 @@ async function call(body: Record<string, unknown>) {
 }
 
 export default function Team() {
-  const { can, profile } = useAuth();
+  const { can, profile, org } = useAuth();
   const toast = useToast();
   const admin = can('admin');
   const [adding, setAdding] = useState(false);
@@ -76,7 +76,7 @@ export default function Team() {
     try { await call({ action: 'set_role', user_id: u.id, role }); toast({ kind: 'ok', text: `صار ${u.full_name}: ${ROLE_LABEL[role]}` }); reload(); }
     catch (e) { toast({ kind: 'err', text: (e as Error).message }); }
   };
-  const share = created ? `أهلاً ${created.name}، هذا حسابك بنظام مؤسسة الرحمة الخيرية:\nالرابط: ${location.origin}${import.meta.env.BASE_URL}\nرقم الهاتف: ${created.phone}\nكلمة السر: ${created.password}\nغيّر كلمة السر من «حسابي» بعد أول دخول.` : '';
+  const share = created ? `أهلاً ${created.name}، هذا حسابك بنظام ${org?.name ?? ''} على منصة غيث:\nالرابط: ${location.origin}${import.meta.env.BASE_URL}\nرقم الهاتف: ${created.phone}\nكلمة السر: ${created.password}\nغيّر كلمة السر من «حسابي» بعد أول دخول.` : '';
 
   return (
     <div>

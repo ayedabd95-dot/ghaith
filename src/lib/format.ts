@@ -28,9 +28,11 @@ export const monthName = (key: string) =>
   new Date(key + '-01').toLocaleDateString('ar-IQ-u-nu-latn', { month: 'long' });
 
 export const ROLE_LABEL: Record<Role, string> = {
-  admin: 'مدير النظام', accountant: 'محاسب', researcher: 'باحث ميداني',
+  owner: 'مالك المنصة', admin: 'مدير المؤسسة', accountant: 'محاسب', researcher: 'باحث ميداني',
   warehouse: 'مسؤول المخزن', distributor: 'موزّع', auditor: 'مدقق',
 };
+
+export const PLAN: Record<string, string> = { trial: 'تجريبي', basic: 'أساسي', pro: 'احترافي' };
 
 export const CATEGORIES: { key: string; label: string }[] = [
   { key: 'needy', label: 'عائلة متعففة' }, { key: 'widow', label: 'أرملة' },
