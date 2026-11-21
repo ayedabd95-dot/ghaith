@@ -24,7 +24,7 @@ export default function LogoPicker({ orgId, path, onChange }: { orgId: string; p
         <div className="flex flex-col gap-2">
           <label className={`btn-ghost btn-sm cursor-pointer ${busy ? 'opacity-50 pointer-events-none' : ''}`}>
             <ImagePlus className="size-4" />{busy ? 'جاري الرفع…' : path ? 'تغيير الشعار' : 'رفع شعار'}
-            <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
+            <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
           </label>
           {path && <button type="button" className="btn-ghost btn-sm text-red-700" disabled={busy} onClick={clear}><Trash2 className="size-4" />حذف الشعار</button>}
         </div>
