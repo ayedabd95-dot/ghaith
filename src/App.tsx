@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import type { Role } from './lib/supabase';
 import { ToastProvider, ListSkeleton } from './components/ui';
@@ -27,11 +27,15 @@ const Activity = lazy(() => import('./pages/Activity'));
 const Account = lazy(() => import('./pages/Account'));
 const Platform = lazy(() => import('./pages/Platform'));
 const OrgSettings = lazy(() => import('./pages/OrgSettings'));
+const MemberCard = lazy(() => import('./pages/MemberCard'));
+const Verify = lazy(() => import('./pages/Verify'));
 
 function Guard({ roles, allowOwner, children }: { roles?: Role[]; allowOwner?: boolean; children: ReactNode }) {
   const { profile, loading } = useAuth();
+  const loc = useLocation();
   if (loading) return <div className="p-6"><ListSkeleton /></div>;
-  if (!profile) return <Navigate to="/login" replace />;
+  if (!profile) return <Navigate to={`/login?next=${encodeURIComponent(loc.pathname)}`} replace />;
+  if (profile.role === 'volunteer' && !allowOwner && !roles?.includes('volunteer')) return <Navigate to="/my-card" replace />;
   if (profile.role === 'owner' && !allowOwner && !roles?.includes('owner')) return <Navigate to="/platform" replace />;
   if (roles && !roles.includes(profile.role)) return <Navigate to={profile.role === 'owner' ? '/platform' : '/'} replace />;
   return <>{children}</>;
@@ -48,10 +52,13 @@ export default function App() {
           <Suspense fallback={<div className="p-6"><ListSkeleton /></div>}>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/verify/:token" element={<Verify />} />
               <Route element={<Guard allowOwner><Layout /></Guard>}>
                 <Route index element={<Guard><Dashboard /></Guard>} />
                 <Route path="platform" element={<Guard roles={['owner']}><Platform /></Guard>} />
                 <Route path="settings" element={<Guard roles={['admin']}><OrgSettings /></Guard>} />
+                <Route path="my-card" element={<Guard allowOwner><MemberCard self /></Guard>} />
+                <Route path="team/:id/card" element={<Guard roles={['admin']}><MemberCard /></Guard>} />
                 <Route path="families" element={<Guard><Families /></Guard>} />
                 <Route path="families/new" element={<Guard roles={['admin', 'researcher']}><FamilyForm /></Guard>} />
                 <Route path="families/:id" element={<Guard><FamilyView /></Guard>} />

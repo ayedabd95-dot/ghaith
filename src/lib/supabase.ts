@@ -6,12 +6,19 @@ export const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.m
 
 export const phoneToEmail = (phone: string) => `${phone}@alrahma.local`;
 
-export type Role = 'owner' | 'admin' | 'accountant' | 'researcher' | 'warehouse' | 'distributor' | 'auditor';
+export type Role = 'owner' | 'admin' | 'accountant' | 'researcher' | 'warehouse' | 'distributor' | 'auditor' | 'volunteer';
 
-export interface Profile { id: string; full_name: string; phone: string; role: Role; active: boolean; org_id: string | null; created_at: string }
+export interface Profile {
+  id: string; full_name: string; phone: string; role: Role; active: boolean; org_id: string | null; created_at: string;
+  full_name_en: string | null; position: string | null; position_en: string | null; birth_date: string | null; blood_type: string | null;
+  photo_path: string | null; serial_no: number | null; id_number: string | null; card_issued: string | null; card_expires: string | null; card_token: string;
+}
 export interface Org {
   id: string; name: string; tagline: string | null; governorate: string | null; contact_phone: string | null;
   status: 'active' | 'suspended'; plan: 'trial' | 'basic' | 'pro'; subscription_ends: string | null; approval_threshold: number; logo_path: string | null; created_at: string;
+  name_en: string | null; tagline_en: string | null; director_name: string | null; director_name_en: string | null;
+  director_title: string | null; director_title_en: string | null; signature_path: string | null; stamp_path: string | null;
+  address: string | null; address_en: string | null; website: string | null; email: string | null; card_prefix: string; card_years: number;
 }
 
 export interface Family {

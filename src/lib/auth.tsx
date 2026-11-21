@@ -23,7 +23,7 @@ export const useAuth = () => useContext(Ctx);
 /** Office roles are signed out after 30 idle minutes; field roles stay signed in for 7 days. */
 const IDLE_MS: Record<Role, number> = {
   owner: 30 * 60_000, admin: 30 * 60_000, accountant: 30 * 60_000, auditor: 30 * 60_000,
-  researcher: 7 * 86_400_000, distributor: 7 * 86_400_000, warehouse: 7 * 86_400_000,
+  volunteer: 7 * 86_400_000, researcher: 7 * 86_400_000, distributor: 7 * 86_400_000, warehouse: 7 * 86_400_000,
 };
 const LAST_KEY = 'ghaith-last-active';
 

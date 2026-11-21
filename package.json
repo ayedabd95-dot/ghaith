@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
     "html5-qrcode": "^2.3.8",
+    "jsbarcode": "^3.11.6",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.441.0",
     "qrcode": "^1.5.4",

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Users, Wallet, ClipboardCheck, Package, Truck, Map, UsersRound, BarChart3, History, UserCircle,
-  Bell, Search, Plus, LogOut, Building2, Settings, WifiOff, CloudUpload, ScanLine, Receipt, ShoppingCart, UserPlus, X, Menu,
+  Bell, Search, Plus, LogOut, Building2, Settings, IdCard, WifiOff, CloudUpload, ScanLine, Receipt, ShoppingCart, UserPlus, X, Menu,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
@@ -26,12 +26,14 @@ const NAV: NavItem[] = [
   { to: '/team', label: 'الفريق والمتطوعون', icon: UsersRound, roles: ['admin', 'auditor'] },
   { to: '/reports', label: 'التقارير والإحصائيات', icon: BarChart3, roles: ['admin', 'accountant', 'auditor'] },
   { to: '/activity', label: 'سجل النشاطات', icon: History, roles: ['admin', 'auditor'] },
+  { to: '/my-card', label: 'هويتي', icon: IdCard, roles: 'org' },
   { to: '/settings', label: 'إعدادات المؤسسة', icon: Settings, roles: ['admin'] },
   { to: '/account', label: 'حسابي', icon: UserCircle, roles: 'any' },
 ];
 
 const BOTTOM: Record<Role, string[]> = {
   owner: ['/platform', '/account'],
+  volunteer: ['/my-card', '/account'],
   admin: ['/', '/families', '/campaigns', '/reports'],
   accountant: ['/', '/finance', '/campaigns', '/reports'],
   auditor: ['/', '/finance', '/reports', '/activity'],
@@ -40,7 +42,7 @@ const BOTTOM: Record<Role, string[]> = {
   warehouse: ['/', '/inventory', '/finance', '/account'],
 };
 const SHORT: Record<string, string> = {
-  '/platform': 'المؤسسات', '/settings': 'الإعدادات',
+  '/platform': 'المؤسسات', '/settings': 'الإعدادات', '/my-card': 'هويتي',
   '/': 'الرئيسية', '/families': 'العوائل', '/route': 'مساري', '/finance': 'المالية', '/inventory': 'المخزن',
   '/campaigns': 'الحملات', '/map': 'الخريطة', '/reports': 'التقارير', '/activity': 'السجل', '/account': 'حسابي',
 };
@@ -55,7 +57,7 @@ function useAlerts() {
   const loc = useLocation();
   const [alerts, setAlerts] = useState<{ text: string; to: string; n: number; tone: string }[]>([]);
   useEffect(() => {
-    if (!profile || profile.role === 'owner') return;
+    if (!profile || profile.role === 'owner' || profile.role === 'volunteer') return;
     (async () => {
       const out: { text: string; to: string; n: number; tone: string }[] = [];
       const { count: visits } = await supabase.from('ch_families').select('id', { count: 'exact', head: true }).eq('status', 'pending_visit');
@@ -109,7 +111,8 @@ export default function Layout() {
   useEffect(() => { if (online && queue.length) syncQueue().then((n) => n && toast({ kind: 'ok', text: `انرفعت ${n} استمارة كانت محفوظة بالجهاز` })); }, [online]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const role = profile!.role;
-  const items = useMemo(() => NAV.filter((n) => n.roles === 'any' || (n.roles === 'org' ? role !== 'owner' : n.roles.includes(role))), [role]);
+  const items = useMemo(() => NAV.filter((n) => role === 'volunteer' ? ['/my-card', '/account'].includes(n.to)
+    : n.roles === 'any' || (n.roles === 'org' ? role !== 'owner' : n.roles.includes(role))), [role]);
   const bottom = BOTTOM[role].map((to) => NAV.find((n) => n.to === to)!).filter(Boolean);
   const alertCount = alerts.reduce((s, a) => s + a.n, 0);
 
@@ -182,14 +185,14 @@ export default function Layout() {
             <div className="min-w-0"><div className="font-bold text-[15px] truncate">{orgName}</div><div className="text-[11px] text-white/70 truncate">أهلاً {profile!.full_name.split(' ')[0]} · {ROLE_LABEL[role]}</div></div>
           </div>
           <div className="hidden lg:block text-sm leading-6 shrink-0"><div className="font-semibold">{gDate}</div><div className="text-white/70">{hDate}</div></div>
-          {role === 'owner' ? <div className="flex-1" /> : <form onSubmit={search} className="hidden lg:flex flex-1 max-w-md mx-auto relative" role="search">
+          {role === 'owner' || role === 'volunteer' ? <div className="flex-1" /> : <form onSubmit={search} className="hidden lg:flex flex-1 max-w-md mx-auto relative" role="search">
             <Search className="size-5 absolute start-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" />
             <input value={q} onChange={(e) => setQ(e.target.value)} className="w-full h-11 rounded-xl bg-white text-ink-900 ps-10 pe-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-gold-500" placeholder="بحث عن عائلة، رقم هاتف أو رمز…" aria-label="بحث" />
           </form>}
           {quick.length > 0 && (
             <button className="hidden lg:inline-flex btn h-11 border border-brand-500 text-white hover:bg-white/10" onClick={() => setAddOpen(true)}><Plus className="size-5" />إضافة جديدة</button>
           )}
-          {role !== 'owner' && Bell_}
+          {role !== 'owner' && role !== 'volunteer' && Bell_}
           <NavLink to="/account" className="hidden lg:flex items-center gap-3 ps-3 border-s border-white/15">
             <div className="text-end"><div className="text-xs text-white/70">{ROLE_LABEL[role]}</div><div className="font-semibold">{profile!.full_name}</div></div>
             <span className="size-11 rounded-full bg-gold-500 grid place-items-center font-bold text-lg">{profile!.full_name.charAt(0)}</span>

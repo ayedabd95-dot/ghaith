@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Phone, Lock, LogIn, ShieldCheck, HelpCircle } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { Modal } from '../components/ui';
@@ -7,6 +7,9 @@ import { Modal } from '../components/ui';
 export default function Login() {
   const { profile, signIn, loading, blockedReason } = useAuth();
   const nav = useNavigate();
+  const [sp] = useSearchParams();
+  const nextRaw = sp.get('next') ?? '/';
+  const dest = /^\/[a-zA-Z0-9/_-]*$/.test(nextRaw) && !nextRaw.startsWith('//') ? nextRaw : '/';
   const [phone, setPhone] = useState('');
   const [pw, setPw] = useState('');
   const [show, setShow] = useState(false);
@@ -14,7 +17,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [help, setHelp] = useState(false);
 
-  if (!loading && profile) return <Navigate to="/" replace />;
+  if (!loading && profile) return <Navigate to={dest} replace />;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +31,7 @@ export default function Login() {
     const msg = await signIn(p, pw);
     setBusy(false);
     if (msg) setErr({ form: msg });
-    else nav('/', { replace: true });
+    else nav(dest, { replace: true });
   };
 
   return (

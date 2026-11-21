@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { UsersRound, UserPlus, KeyRound, Ban, CheckCircle2, Copy } from 'lucide-react';
+import { UsersRound, UserPlus, KeyRound, Ban, CheckCircle2, Copy, IdCard } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase, type Profile, type Role } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { ROLE_LABEL, num, pct } from '../lib/format';
@@ -104,8 +105,9 @@ export default function Team() {
                   <div key={s.l} className="rounded-lg bg-ink-50 p-2"><div className="text-lg font-bold num">{num(s.v)}{'suf' in s ? s.suf : ''}</div><div className="text-xs text-ink-500">{s.l}</div></div>
                 ))}</div>
               )}
+              {admin && <Link to={`/team/${u.id}/card`} className="btn-ghost btn-sm w-full mt-3"><IdCard className="size-4" />{u.card_issued ? `الهوية · ${u.id_number}` : 'إصدار هوية'}</Link>}
               {admin && u.id !== profile!.id && (
-                <div className="grid grid-cols-2 gap-2 mt-3">
+                <div className="grid grid-cols-2 gap-2 mt-2">
                   <button className="btn-ghost btn-sm" onClick={() => setPwFor(u)}><KeyRound className="size-4" />كلمة سر جديدة</button>
                   <button className={`btn-ghost btn-sm ${u.active ? 'text-red-700' : ''}`} onClick={() => setToggle(u)}>{u.active ? <><Ban className="size-4" />إيقاف</> : <><CheckCircle2 className="size-4" />تفعيل</>}</button>
                 </div>

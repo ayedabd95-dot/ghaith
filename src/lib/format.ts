@@ -29,10 +29,16 @@ export const monthName = (key: string) =>
 
 export const ROLE_LABEL: Record<Role, string> = {
   owner: 'مالك المنصة', admin: 'مدير المؤسسة', accountant: 'محاسب', researcher: 'باحث ميداني',
-  warehouse: 'مسؤول المخزن', distributor: 'موزّع', auditor: 'مدقق',
+  warehouse: 'مسؤول المخزن', distributor: 'موزّع', auditor: 'مدقق', volunteer: 'متطوع',
 };
 
 export const PLAN: Record<string, string> = { trial: 'تجريبي', basic: 'أساسي', pro: 'احترافي' };
+
+export const ROLE_LABEL_EN: Record<string, string> = {
+  owner: 'Platform Owner', admin: 'Director', accountant: 'Accountant', researcher: 'Field Researcher',
+  warehouse: 'Warehouse Officer', distributor: 'Distribution Officer', auditor: 'Auditor', volunteer: 'Volunteer',
+};
+export const dmy = (d: string | null | undefined) => (d ? d.slice(0, 10).split('-').reverse().join('/') : '—');
 
 export const CATEGORIES: { key: string; label: string }[] = [
   { key: 'needy', label: 'عائلة متعففة' }, { key: 'widow', label: 'أرملة' },
