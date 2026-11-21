@@ -96,7 +96,7 @@ export default function Team() {
               </div>
               {admin && u.id !== profile!.id ? (
                 <select className="input h-10 mt-3 text-sm" value={u.role} onChange={(e) => changeRole(u, e.target.value as Role)} aria-label={`دور ${u.full_name}`}>
-                  {Object.entries(ROLE_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                  {Object.entries(ROLE_LABEL).filter(([k]) => k !== 'owner').map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                 </select>
               ) : <div className="mt-3 chip bg-brand-50 text-brand-700">{ROLE_LABEL[u.role]}</div>}
               {stats(u).length > 0 && (
@@ -119,7 +119,7 @@ export default function Team() {
         <div className="space-y-4">
           <Field label="الاسم الكامل" required><input className="input" value={nv.full_name} onChange={(e) => setNv({ ...nv, full_name: e.target.value })} autoFocus /></Field>
           <Field label="رقم الهاتف" required hint="يدخل بيه للنظام"><input className="input text-left" dir="ltr" inputMode="tel" value={nv.phone} onChange={(e) => setNv({ ...nv, phone: e.target.value })} placeholder="07XX XXX XXXX" /></Field>
-          <Field label="الدور"><select className="input" value={nv.role} onChange={(e) => setNv({ ...nv, role: e.target.value as Role })}>{Object.entries(ROLE_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Field>
+          <Field label="الدور"><select className="input" value={nv.role} onChange={(e) => setNv({ ...nv, role: e.target.value as Role })}>{Object.entries(ROLE_LABEL).filter(([k]) => k !== 'owner').map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Field>
           <Field label="كلمة السر الأولى" hint="انولدت تلقائياً — العضو يغيرها بعد أول دخول"><input className="input text-left" dir="ltr" value={nv.password} onChange={(e) => setNv({ ...nv, password: e.target.value })} /></Field>
           {err && <div className="rounded-xl bg-red-50 text-red-700 px-4 py-3 font-medium" role="alert">{err}</div>}
           <button className="btn-primary w-full" disabled={busy} onClick={create}>{busy ? 'جاري الإنشاء…' : 'إنشاء الحساب'}</button>
