@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Users, Wallet, ClipboardCheck, Package, Truck, Map, UsersRound, BarChart3, History, UserCircle,
-  Bell, Search, Plus, LogOut, Building2, Settings, IdCard, WifiOff, CloudUpload, ScanLine, Receipt, ShoppingCart, UserPlus, X, Menu,
+  Bell, Search, Plus, LogOut, Building2, Settings, IdCard, Clock3, WifiOff, CloudUpload, ScanLine, Receipt, ShoppingCart, UserPlus, X, Menu,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
@@ -26,6 +26,7 @@ const NAV: NavItem[] = [
   { to: '/team', label: 'الفريق والمتطوعون', icon: UsersRound, roles: ['admin', 'auditor'] },
   { to: '/reports', label: 'التقارير والإحصائيات', icon: BarChart3, roles: ['admin', 'accountant', 'auditor'] },
   { to: '/activity', label: 'سجل النشاطات', icon: History, roles: ['admin', 'auditor'] },
+  { to: '/attendance', label: 'الحضور والانصراف', icon: Clock3, roles: 'org' },
   { to: '/my-card', label: 'هويتي', icon: IdCard, roles: 'org' },
   { to: '/settings', label: 'إعدادات المؤسسة', icon: Settings, roles: ['admin'] },
   { to: '/account', label: 'حسابي', icon: UserCircle, roles: 'any' },
@@ -33,7 +34,7 @@ const NAV: NavItem[] = [
 
 const BOTTOM: Record<Role, string[]> = {
   owner: ['/platform', '/account'],
-  volunteer: ['/my-card', '/account'],
+  volunteer: ['/attendance', '/my-card'],
   admin: ['/', '/families', '/campaigns', '/reports'],
   accountant: ['/', '/finance', '/campaigns', '/reports'],
   auditor: ['/', '/finance', '/reports', '/activity'],
@@ -111,17 +112,22 @@ export default function Layout() {
   useEffect(() => { if (online && queue.length) syncQueue().then((n) => n && toast({ kind: 'ok', text: `انرفعت ${n} استمارة كانت محفوظة بالجهاز` })); }, [online]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const role = profile!.role;
-  const items = useMemo(() => NAV.filter((n) => role === 'volunteer' ? ['/my-card', '/account'].includes(n.to)
-    : n.roles === 'any' || (n.roles === 'org' ? role !== 'owner' : n.roles.includes(role))), [role]);
+  const vp = profile!.perms ?? [];
+  const volunteerSees = (to: string) => ['/attendance', '/my-card', '/account'].includes(to)
+    || (to === '/families' && (vp.includes('families_view') || vp.includes('families_add')))
+    || (to === '/map' && vp.includes('families_view')) || (to === '/route' && vp.includes('distribute'))
+    || (to === '/campaigns' && vp.includes('campaigns_view')) || (to === '/inventory' && vp.includes('inventory_view'));
+  const items = NAV.filter((n) => role === 'volunteer' ? volunteerSees(n.to)
+    : n.roles === 'any' || (n.roles === 'org' ? role !== 'owner' : n.roles.includes(role)));
   const bottom = BOTTOM[role].map((to) => NAV.find((n) => n.to === to)!).filter(Boolean);
   const alertCount = alerts.reduce((s, a) => s + a.n, 0);
 
   const quick = [
-    { to: '/families/new', label: 'بلاغ عن عائلة', icon: UserPlus, roles: ['admin', 'researcher'] as Role[] },
+    { to: '/families/new', label: 'بلاغ عن عائلة', icon: UserPlus, roles: ['admin', 'researcher', ...(vp.includes('families_add') ? ['volunteer'] : [])] as Role[] },
     { to: '/finance/donation', label: 'تسجيل تبرع', icon: Receipt, roles: ['admin', 'accountant'] as Role[] },
     { to: '/finance/expense', label: 'تسجيل مصروف', icon: ShoppingCart, roles: ['admin', 'accountant', 'warehouse'] as Role[] },
     { to: '/campaigns/new', label: 'حملة جديدة', icon: Truck, roles: ['admin'] as Role[] },
-    { to: '/route?scan=1', label: 'امسح QR وأكّد استلام', icon: ScanLine, roles: ['distributor', 'admin'] as Role[] },
+    { to: '/route?scan=1', label: 'امسح QR وأكّد استلام', icon: ScanLine, roles: ['distributor', 'admin', ...(vp.includes('distribute') ? ['volunteer'] : [])] as Role[] },
   ].filter((x) => x.roles.includes(role));
 
   const doSignOut = async () => { setLogoutAsk(false); await signOut(); nav('/login', { replace: true }); };

@@ -12,7 +12,7 @@ export default function CampaignForm() {
     const [f, i, p, d] = await Promise.all([
       supabase.from('ch_families').select('id,head_name,tier,score,categories,lat,lng,status').eq('status', 'active'),
       supabase.from('ch_items').select('*').order('name'),
-      supabase.from('ch_profiles').select('*').eq('role', 'distributor').eq('active', true),
+      supabase.from('ch_profiles').select('*').eq('active', true).or('role.eq.distributor,and(role.eq.volunteer,perms.cs.{distribute})'),
       supabase.from('ch_distributions').select('family_id,delivered_at').not('delivered_at', 'is', null),
     ]);
     return { fams: (f.data ?? []) as Family[], items: (i.data ?? []) as Item[], dists: (p.data ?? []) as Profile[], recent: d.data ?? [] };

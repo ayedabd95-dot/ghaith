@@ -132,6 +132,14 @@ Deno.serve(async (req) => {
     await service.auth.admin.updateUserById(user_id, { ban_duration: active ? "none" : "876000h" });
     return json({ ok: true });
   }
+  if (action === "set_perms") {
+    const ALLOWED = ["families_view", "families_add", "distribute", "campaigns_view", "inventory_view"];
+    if (target.role !== "volunteer") return json({ error: "الصلاحيات المخصصة للمتطوعين فقط" }, 400);
+    const raw = Array.isArray(body.perms) ? body.perms.map(String) : [];
+    if (raw.some((x) => !ALLOWED.includes(x))) return json({ error: "صلاحية غير معروفة" }, 400);
+    const { error } = await service.from("ch_profiles").update({ perms: [...new Set(raw)] }).eq("id", user_id);
+    return error ? json({ error: "تعذر حفظ الصلاحيات" }, 400) : json({ ok: true });
+  }
   if (action === "set_role") {
     const role = String(body.role ?? "");
     if (!ORG_ROLES.includes(role)) return json({ error: "دور غير صالح" }, 400);

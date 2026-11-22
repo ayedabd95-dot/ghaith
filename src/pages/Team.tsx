@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { UsersRound, UserPlus, KeyRound, Ban, CheckCircle2, Copy, IdCard } from 'lucide-react';
+import { UsersRound, UserPlus, KeyRound, Ban, CheckCircle2, Copy, IdCard, ShieldCheck } from 'lucide-react';
+import { PERMS } from '../lib/perms';
 import { Link } from 'react-router-dom';
 import { supabase, type Profile, type Role } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
@@ -27,6 +28,8 @@ export default function Team() {
   const [created, setCreated] = useState<{ phone: string; password: string; name: string } | null>(null);
   const [pwFor, setPwFor] = useState<Profile | null>(null);
   const [toggle, setToggle] = useState<Profile | null>(null);
+  const [permsFor, setPermsFor] = useState<Profile | null>(null);
+  const [permSel, setPermSel] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -73,6 +76,14 @@ export default function Team() {
     try { await call({ action: 'set_active', user_id: toggle.id, active: !toggle.active }); toast({ kind: 'ok', text: toggle.active ? 'انوقف الحساب وطلع من كل الأجهزة' : 'رجع الحساب فعّال' }); setToggle(null); reload(); }
     catch (e) { toast({ kind: 'err', text: (e as Error).message }); } finally { setBusy(false); }
   };
+  const savePerms = async () => {
+    if (!permsFor) return;
+    setBusy(true);
+    try { await call({ action: 'set_perms', user_id: permsFor.id, perms: permSel }); }
+    catch (e) { toast({ kind: 'err', text: (e as Error).message }); return; }
+    finally { setBusy(false); }
+    toast({ kind: 'ok', text: `انحفظت صلاحيات ${permsFor.full_name}` }); setPermsFor(null); reload();
+  };
   const changeRole = async (u: Profile, role: Role) => {
     try { await call({ action: 'set_role', user_id: u.id, role }); toast({ kind: 'ok', text: `صار ${u.full_name}: ${ROLE_LABEL[role]}` }); reload(); }
     catch (e) { toast({ kind: 'err', text: (e as Error).message }); }
@@ -105,6 +116,12 @@ export default function Team() {
                   <div key={s.l} className="rounded-lg bg-ink-50 p-2"><div className="text-lg font-bold num">{num(s.v)}{'suf' in s ? s.suf : ''}</div><div className="text-xs text-ink-500">{s.l}</div></div>
                 ))}</div>
               )}
+              {u.role === 'volunteer' && (
+                <div className="mt-3 rounded-lg bg-ink-50 p-2.5 text-xs text-ink-700 leading-5">
+                  <b>الصلاحيات:</b> {(u.perms ?? []).length ? PERMS.filter((x) => u.perms.includes(x.key)).map((x) => x.label).join('، ') : 'الحضور والهوية فقط'}
+                  {admin && <button className="block mt-1.5 font-semibold text-brand-700 hover:underline" onClick={() => { setPermsFor(u); setPermSel(u.perms ?? []); }}><ShieldCheck className="size-3.5 inline me-1" />تعديل الصلاحيات</button>}
+                </div>
+              )}
               {admin && <Link to={`/team/${u.id}/card`} className="btn-ghost btn-sm w-full mt-3"><IdCard className="size-4" />{u.card_issued ? `الهوية · ${u.id_number}` : 'إصدار هوية'}</Link>}
               {admin && u.id !== profile!.id && (
                 <div className="grid grid-cols-2 gap-2 mt-2">
@@ -117,6 +134,26 @@ export default function Team() {
         </div>
       )}
 
+      <Modal open={!!permsFor} onClose={() => setPermsFor(null)} title={`صلاحيات ${permsFor?.full_name ?? ''}`}>
+        <p className="text-sm text-ink-700 mb-3">المتطوع دائماً يسجّل حضوره ويشوف هويته. اختار شنو يكدر يسوي زيادة:</p>
+        <div className="space-y-2">
+          {PERMS.map((x) => {
+            const on = permSel.includes(x.key);
+            return (
+              <label key={x.key} className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer ${on ? 'border-brand-600 bg-brand-50' : 'border-ink-200'}`}>
+                <input type="checkbox" className="size-5 mt-0.5 accent-brand-700" checked={on} onChange={() => setPermSel(on ? permSel.filter((k) => k !== x.key) : [...permSel, x.key])} />
+                <span><span className="font-semibold block">{x.label}</span><span className="text-xs text-ink-500">{x.hint}</span></span>
+              </label>
+            );
+          })}
+        </div>
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          <button className="btn-ghost" onClick={() => setPermSel(PERMS.map((x) => x.key))}>صلاحيات عامة (الكل)</button>
+          <button className="btn-ghost" onClick={() => setPermSel([])}>بدون صلاحيات</button>
+        </div>
+        <button className="btn-primary w-full mt-3" disabled={busy} onClick={savePerms}>حفظ الصلاحيات</button>
+        <p className="text-xs text-ink-500 mt-3">إذا تريده يصير عضو كامل (باحث، موزّع…)، غيّر دوره من القائمة بكارته.</p>
+      </Modal>
       <Modal open={adding} onClose={() => setAdding(false)} title="عضو جديد بالفريق">
         <div className="space-y-4">
           <Field label="الاسم الكامل" required><input className="input" value={nv.full_name} onChange={(e) => setNv({ ...nv, full_name: e.target.value })} autoFocus /></Field>

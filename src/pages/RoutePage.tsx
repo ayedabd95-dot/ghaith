@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Scanner from '../components/QrScanner';
 import { useSearchParams } from 'react-router-dom';
 import { Truck, ScanLine, Phone, Navigation, CheckCircle2, XCircle, MapPin, Keyboard } from 'lucide-react';
 import { supabase, errText } from '../lib/supabase';
@@ -139,26 +140,4 @@ export default function RoutePage() {
       </Modal>
     </div>
   );
-}
-
-function Scanner({ onCode }: { onCode: (c: string) => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [msg, setMsg] = useState('جاري فتح الكاميرا…');
-  const cb = useRef(onCode); cb.current = onCode;
-  useEffect(() => {
-    let stop: (() => Promise<void>) | null = null;
-    let fired = false;
-    import('html5-qrcode').then(({ Html5Qrcode }) => {
-      if (!ref.current) return;
-      const q = new Html5Qrcode(ref.current.id);
-      q.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 }, (text) => { if (!fired) { fired = true; cb.current(text); } }, () => {})
-        .then(() => { setMsg('وجّه الكاميرا على رمز QR بالبطاقة'); stop = () => q.stop(); })
-        .catch(() => setMsg('ما كدرنا نفتح الكاميرا. اسمح للمتصفح بالكاميرا، أو اكتب الرمز تحت.'));
-    });
-    return () => { stop?.().catch(() => {}); };
-  }, []);
-  return (<>
-    <div id="qr-reader" ref={ref} className="rounded-xl overflow-hidden bg-ink-900 min-h-[240px]" />
-    <p className="text-sm text-ink-500 mt-2 text-center">{msg}</p>
-  </>);
 }

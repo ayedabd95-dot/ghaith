@@ -117,8 +117,6 @@ function Shell({ children, org }: { children: React.ReactNode; org: Org }) {
     <div className="id-card relative overflow-hidden bg-white select-none" style={{ width: CARD_W, height: CARD_H, borderRadius: 18, boxShadow: '0 12px 32px rgba(11,58,35,.18), 0 0 0 1px rgba(11,58,35,.08)', fontFamily: '"IBM Plex Sans Arabic", sans-serif', color: G.ink }}>
       <div className="absolute inset-0" style={{ background: `radial-gradient(120% 60% at 100% 0%, ${G.light} 0%, #fff 55%), #fff` }} />
       <Guilloche seed={org.id} />
-      {/* lanyard slot */}
-      <div className="absolute left-1/2 -translate-x-1/2 rounded-full" style={{ top: 10, width: 54, height: 8, background: '#fff', boxShadow: 'inset 0 1px 3px rgba(0,0,0,.25)', zIndex: 5 }} />
       {children}
       {/* bottom wave */}
       <svg className="absolute bottom-0 left-0" width={CARD_W} height="34" viewBox={`0 0 ${CARD_W} 34`} aria-hidden>

@@ -11,7 +11,7 @@ export type Role = 'owner' | 'admin' | 'accountant' | 'researcher' | 'warehouse'
 export interface Profile {
   id: string; full_name: string; phone: string; role: Role; active: boolean; org_id: string | null; created_at: string;
   full_name_en: string | null; position: string | null; position_en: string | null; birth_date: string | null; blood_type: string | null;
-  photo_path: string | null; serial_no: number | null; id_number: string | null; card_issued: string | null; card_expires: string | null; card_token: string;
+  photo_path: string | null; perms: string[]; serial_no: number | null; id_number: string | null; card_issued: string | null; card_expires: string | null; card_token: string;
 }
 export interface Org {
   id: string; name: string; tagline: string | null; governorate: string | null; contact_phone: string | null;

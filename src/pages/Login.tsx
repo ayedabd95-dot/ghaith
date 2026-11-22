@@ -10,7 +10,7 @@ export default function Login() {
   const [sp] = useSearchParams();
   const nextRaw = sp.get('next') ?? '/';
   const dest = /^\/[a-zA-Z0-9/_-]*$/.test(nextRaw) && !nextRaw.startsWith('//') ? nextRaw : '/';
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(() => { try { return localStorage.getItem('ghaith-phone') ?? ''; } catch { return ''; } });
   const [pw, setPw] = useState('');
   const [show, setShow] = useState(false);
   const [err, setErr] = useState<{ phone?: string; pw?: string; form?: string }>(() => (blockedReason ? { form: blockedReason } : {}));
@@ -31,7 +31,7 @@ export default function Login() {
     const msg = await signIn(p, pw);
     setBusy(false);
     if (msg) setErr({ form: msg });
-    else nav(dest, { replace: true });
+    else { try { localStorage.setItem('ghaith-phone', p); } catch { /* storage blocked */ } nav(dest, { replace: true }); }
   };
 
   return (
