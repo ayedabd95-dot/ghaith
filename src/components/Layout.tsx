@@ -43,7 +43,7 @@ const BOTTOM: Record<Role, string[]> = {
   warehouse: ['/', '/inventory', '/finance', '/account'],
 };
 const SHORT: Record<string, string> = {
-  '/platform': 'المؤسسات', '/settings': 'الإعدادات', '/my-card': 'هويتي',
+  '/platform': 'المؤسسات', '/settings': 'الإعدادات', '/my-card': 'هويتي', '/attendance': 'الحضور',
   '/': 'الرئيسية', '/families': 'العوائل', '/route': 'مساري', '/finance': 'المالية', '/inventory': 'المخزن',
   '/campaigns': 'الحملات', '/map': 'الخريطة', '/reports': 'التقارير', '/activity': 'السجل', '/account': 'حسابي',
 };
@@ -119,7 +119,10 @@ export default function Layout() {
     || (to === '/campaigns' && vp.includes('campaigns_view')) || (to === '/inventory' && vp.includes('inventory_view'));
   const items = NAV.filter((n) => role === 'volunteer' ? volunteerSees(n.to)
     : n.roles === 'any' || (n.roles === 'org' ? role !== 'owner' : n.roles.includes(role)));
-  const bottom = BOTTOM[role].map((to) => NAV.find((n) => n.to === to)!).filter(Boolean);
+  const bottomPaths = role === 'volunteer'
+    ? ['/attendance', ...(vp.includes('families_view') || vp.includes('families_add') ? ['/families'] : []), ...(vp.includes('distribute') ? ['/route'] : []), '/my-card'].slice(0, 4)
+    : BOTTOM[role];
+  const bottom = bottomPaths.map((to) => NAV.find((n) => n.to === to)!).filter(Boolean);
   const alertCount = alerts.reduce((s, a) => s + a.n, 0);
 
   const quick = [
