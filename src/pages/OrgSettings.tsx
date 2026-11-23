@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Settings, BadgeCheck, IdCard, PenLine, Stamp as StampIcon, Trash2 } from 'lucide-react';
+import { Settings, BadgeCheck, IdCard, PenLine, Stamp as StampIcon, Trash2, Palette, Check } from 'lucide-react';
 import { supabase, errText, type Org } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { PLAN, dateAr, money, GOVERNORATES } from '../lib/format';
 import { assetUrl, uploadOrgImage } from '../lib/logo';
 import { PageHeader, Field, useToast } from '../components/ui';
 import LogoPicker from '../components/LogoPicker';
-import { Stamp } from '../components/IdCard';
+import { Stamp, CardFront, CardBack, TEMPLATES, PALETTES, CARD_W, CARD_H, type Template } from '../components/IdCard';
+import type { Profile } from '../lib/supabase';
 
 function ImageSlot({ label, hint, icon: Icon, url, onPick, onClear, busy, preview }: {
   label: string; hint: string; icon: typeof PenLine; url: string | null; busy: boolean;
@@ -32,6 +33,13 @@ function ImageSlot({ label, hint, icon: Icon, url, onPick, onClear, busy, previe
   );
 }
 
+const SAMPLE: Profile = {
+  id: 'sample', full_name: 'أحمد محمد العلي', full_name_en: 'Ahmed Mohammed Al-Ali', phone: '07700000000', role: 'researcher', active: true,
+  org_id: null, created_at: '', position: 'منسق البرامج الميدانية', position_en: 'Field Programs Coordinator', birth_date: '1992-05-14',
+  blood_type: 'O+', photo_path: null, perms: [], serial_no: 1, id_number: 'GH-2026-00001', card_issued: '2026-01-15', card_expires: '2028-01-15',
+  card_token: '00000000-0000-4000-8000-000000000000',
+};
+
 export default function OrgSettings() {
   const { org, setOrg } = useAuth();
   const toast = useToast();
@@ -41,10 +49,19 @@ export default function OrgSettings() {
     name_en: o.name_en ?? '', tagline_en: o.tagline_en ?? '', director_name: o.director_name ?? '', director_name_en: o.director_name_en ?? '',
     director_title: o.director_title ?? 'مدير المؤسسة', director_title_en: o.director_title_en ?? 'Director',
     address: o.address ?? '', address_en: o.address_en ?? '', email: o.email ?? '', website: o.website ?? '', card_prefix: o.card_prefix, card_years: String(o.card_years),
+    primary_color: o.primary_color ?? '#0b3a23', accent_color: o.accent_color ?? '#c99a1e', card_template: (o.card_template ?? 'classic') as Template,
   });
+  const [face, setFace] = useState<'front' | 'back'>('front');
   const [busy, setBusy] = useState(false);
   const [imgBusy, setImgBusy] = useState(false);
   const [err, setErr] = useState('');
+  const previewOrg = {
+    ...o, name: v.name || o.name, name_en: v.name_en || null, director_name: v.director_name || null, director_name_en: v.director_name_en || null,
+    director_title: v.director_title, director_title_en: v.director_title_en, address: v.address || null, address_en: v.address_en || null,
+    email: v.email || null, website: v.website || null, card_prefix: v.card_prefix.toUpperCase() || 'GH',
+    primary_color: /^#[0-9a-fA-F]{6}$/.test(v.primary_color) ? v.primary_color : o.primary_color,
+    accent_color: /^#[0-9a-fA-F]{6}$/.test(v.accent_color) ? v.accent_color : o.accent_color, card_template: v.card_template,
+  };
   const set = (k: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setV({ ...v, [k]: e.target.value });
 
   const save = async (e: React.FormEvent) => {
@@ -53,6 +70,7 @@ export default function OrgSettings() {
     const prefix = v.card_prefix.trim().toUpperCase();
     if (!/^[A-Z]{2,5}$/.test(prefix)) return setErr('رمز البطاقات من 2 إلى 5 حروف إنكليزية، مثل GH');
     if (v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim())) return setErr('البريد الإلكتروني مو صحيح');
+    if (![v.primary_color, v.accent_color].every((c) => /^#[0-9a-fA-F]{6}$/.test(c))) return setErr('اللون لازم يكون رمز مثل #0b3a23');
     setBusy(true);
     const { data, error } = await supabase.from('ch_orgs').update({
       name: v.name.trim(), tagline: v.tagline.trim() || null, governorate: v.governorate, contact_phone: v.contact_phone.replace(/\s/g, '') || null,
@@ -60,6 +78,7 @@ export default function OrgSettings() {
       name_en: v.name_en.trim() || null, tagline_en: v.tagline_en.trim() || null, director_name: v.director_name.trim() || null, director_name_en: v.director_name_en.trim() || null,
       director_title: v.director_title.trim() || null, director_title_en: v.director_title_en.trim() || null, address: v.address.trim() || null, address_en: v.address_en.trim() || null,
       email: v.email.trim() || null, website: v.website.trim().replace(/^https?:\/\//, '') || null, card_prefix: prefix, card_years: Number(v.card_years),
+      primary_color: v.primary_color, accent_color: v.accent_color, card_template: v.card_template,
     }).eq('id', o.id).select('*').single();
     setBusy(false);
     if (error) { setErr(errText(error)); return; }
@@ -130,6 +149,72 @@ export default function OrgSettings() {
               hint="وقّع بقلم أزرق أو أسود على ورقة بيضاء وصوّرها، والأفضل PNG بخلفية شفافة." />
             <ImageSlot label="ختم المؤسسة" icon={StampIcon} busy={imgBusy} url={assetUrl('ch-logos', o.stamp_path)} onPick={(f) => pickImg('stamp', f)} onClear={() => clearImg('stamp')}
               preview={<Stamp org={o} size={72} />} hint="إذا ما رفعت ختم، النظام يسوي ختم دائري باسم المؤسسة تلقائياً (المعروض هنا)." />
+          </div>
+        </div>
+
+        <div className="card p-5 space-y-5">
+          <h2 className="flex items-center gap-2 font-bold text-[17px]"><Palette className="size-5 text-brand-600" />ألوان المؤسسة ونموذج الهوية</h2>
+          <div>
+            <span className="field-label">ألوان جاهزة</span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {PALETTES.map((c) => {
+                const on = v.primary_color.toLowerCase() === c.primary && v.accent_color.toLowerCase() === c.accent;
+                return (
+                  <button type="button" key={c.name} onClick={() => setV({ ...v, primary_color: c.primary, accent_color: c.accent })}
+                    className={`lift flex items-center gap-2 rounded-xl border p-2 text-sm text-start ${on ? 'border-brand-600 ring-2 ring-brand-100' : 'border-ink-200'}`}>
+                    <span className="flex shrink-0"><span className="size-6 rounded-full ring-2 ring-white" style={{ background: c.primary }} /><span className="size-6 rounded-full -ms-2 ring-2 ring-white" style={{ background: c.accent }} /></span>
+                    <span className="flex-1 leading-5">{c.name}</span>{on && <Check className="size-4 text-brand-700" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {([['primary_color', 'اللون الأساسي'], ['accent_color', 'لون التمييز']] as const).map(([k, l]) => (
+              <label key={k} className="block">
+                <span className="field-label">{l}</span>
+                <span className="flex items-center gap-2 rounded-xl border border-ink-300 h-12 px-2">
+                  <input type="color" value={v[k]} onChange={(e) => setV({ ...v, [k]: e.target.value })} className="size-9 rounded-lg cursor-pointer border-0 bg-transparent p-0" aria-label={l} />
+                  <input className="flex-1 min-w-0 text-left outline-none font-mono text-sm" dir="ltr" value={v[k]} maxLength={7}
+                    onChange={(e) => { const x = e.target.value.trim(); setV({ ...v, [k]: x.startsWith('#') ? x : '#' + x }); }} aria-label={`${l} بالرمز`} />
+                </span>
+              </label>
+            ))}
+          </div>
+          <div>
+            <span className="field-label">نموذج الهوية</span>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {TEMPLATES.map((tp) => {
+                const on = v.card_template === tp.key;
+                return (
+                  <button type="button" key={tp.key} onClick={() => setV({ ...v, card_template: tp.key })}
+                    className={`lift rounded-2xl border p-2 text-center ${on ? 'border-brand-600 ring-2 ring-brand-100 bg-brand-50' : 'border-ink-200 bg-white'}`}>
+                    <div className="mx-auto overflow-hidden pointer-events-none" style={{ width: CARD_W * 0.36, height: CARD_H * 0.36 }}>
+                      <div style={{ transform: 'scale(0.36)', transformOrigin: 'top right', width: CARD_W, height: CARD_H }}>
+                        <CardFront p={SAMPLE} org={previewOrg} template={tp.key} />
+                      </div>
+                    </div>
+                    <div className="font-bold mt-2 flex items-center justify-center gap-1">{on && <Check className="size-4 text-brand-700" />}{tp.label}</div>
+                    <div className="text-xs text-ink-500">{tp.hint}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="field-label mb-0">معاينة بالحجم الطبيعي</span>
+              <div className="flex gap-1">
+                <button type="button" className={`tab ${face === 'front' ? 'tab-active' : 'border border-ink-200'}`} onClick={() => setFace('front')}>الوجه</button>
+                <button type="button" className={`tab ${face === 'back' ? 'tab-active' : 'border border-ink-200'}`} onClick={() => setFace('back')}>الظهر</button>
+              </div>
+            </div>
+            <div className="flex justify-center rounded-2xl bg-ink-50 py-6 overflow-hidden">
+              <div style={{ width: CARD_W * 0.8, height: CARD_H * 0.8 }}><div style={{ transform: 'scale(0.8)', transformOrigin: 'top right', width: CARD_W, height: CARD_H }}>
+                {face === 'front' ? <CardFront p={SAMPLE} org={previewOrg} /> : <CardBack p={SAMPLE} org={previewOrg} />}
+              </div></div>
+            </div>
+            <p className="text-xs text-ink-500 mt-2">المعاينة ببيانات تجريبية. اضغط «حفظ الإعدادات» حتى تنطبق على كل هويات المؤسسة.</p>
           </div>
         </div>
 

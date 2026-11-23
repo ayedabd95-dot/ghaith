@@ -19,6 +19,7 @@ export interface Org {
   name_en: string | null; tagline_en: string | null; director_name: string | null; director_name_en: string | null;
   director_title: string | null; director_title_en: string | null; signature_path: string | null; stamp_path: string | null;
   address: string | null; address_en: string | null; website: string | null; email: string | null; card_prefix: string; card_years: number;
+  primary_color: string; accent_color: string; card_template: string;
 }
 
 export interface Family {
